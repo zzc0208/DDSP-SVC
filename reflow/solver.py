@@ -8,6 +8,7 @@ from logger import utils
 from torch import autocast
 from torch.cuda.amp import GradScaler
 from nsf_hifigan.nvSTFT import STFT
+import wandb  # Add this import
 
 def calculate_mel_snr(gt_mel, pred_mel):
     # 计算误差图像
@@ -190,7 +191,7 @@ def test(args, model, vocoder, loader_test, saver):
     return test_ddsp_loss, test_reflow_loss
 
 
-def train(args, initial_global_step, model, optimizer, scheduler, vocoder, loader_train, loader_test):
+def train(args, initial_global_step, model, optimizer, scheduler, vocoder, loader_train, loader_valid, wandb):
     # saver
     saver = Saver(args, initial_global_step=initial_global_step)
 
@@ -284,7 +285,7 @@ def train(args, initial_global_step, model, optimizer, scheduler, vocoder, loade
                     saver.delete_model(postfix=f'{last_val_step}')
                 
                 # run testing set
-                test_ddsp_loss, test_reflow_loss = test(args, model, vocoder, loader_test, saver)
+                test_ddsp_loss, test_reflow_loss = test(args, model, vocoder, loader_valid, saver)
                 test_loss = args.train.lambda_ddsp * test_ddsp_loss + test_reflow_loss
                 
                 # log loss
@@ -302,4 +303,13 @@ def train(args, initial_global_step, model, optimizer, scheduler, vocoder, loade
                 
                 model.train()
 
-                          
+            # Log metrics to wandb
+            wandb.log({
+                "train_loss": loss.item(),
+                "learning_rate": scheduler.get_last_lr()[0],
+                "global_step": saver.global_step
+            })
+
+        # Validation
+        val_loss = test(args, model, vocoder, loader_valid, saver)
+        wandb.log({"val_loss": val_loss})

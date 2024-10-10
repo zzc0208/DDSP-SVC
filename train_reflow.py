@@ -5,6 +5,7 @@ from torch.optim import lr_scheduler
 from logger import utils
 from reflow.data_loaders import get_data_loaders
 from reflow.vocoder import Vocoder, Unit2Wav
+import wandb  # Add this import
 
 
 def parse_args(args=None, namespace=None):
@@ -28,6 +29,9 @@ if __name__ == '__main__':
     print(' > config:', cmd.config)
     print(' >    exp:', args.env.expdir)
     
+    # Initialize wandb
+    wandb.init(project="reflow_project", config=args)
+
     # load vocoder
     vocoder = Vocoder(args.vocoder.type, args.vocoder.ckpt, device=args.device)
     
@@ -72,5 +76,8 @@ if __name__ == '__main__':
     loader_train, loader_valid = get_data_loaders(args, whole_audio=False)
     
     # run
-    train(args, initial_global_step, model, optimizer, scheduler, vocoder, loader_train, loader_valid)
+    train(args, initial_global_step, model, optimizer, scheduler, vocoder, loader_train, loader_valid, wandb)
     
+    # Finish wandb run
+    wandb.finish()
+
