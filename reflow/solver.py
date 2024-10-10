@@ -300,6 +300,15 @@ def train(args, initial_global_step, model, optimizer, scheduler, vocoder, loade
                     'validation/ddsp_loss': test_ddsp_loss,
                     'validation/reflow_loss': test_reflow_loss
                 })
+
+                wandb.log({
+                    'validation/loss': test_loss,
+                    'validation/ddsp_loss': test_ddsp_loss,
+                    'validation/reflow_loss': test_reflow_loss
+                })
+                # Validation
+        
+        
                 
                 model.train()
 
@@ -310,6 +319,4 @@ def train(args, initial_global_step, model, optimizer, scheduler, vocoder, loade
                 "global_step": saver.global_step
             })
 
-        # Validation
-        val_loss = test(args, model, vocoder, loader_valid, saver)
-        wandb.log({"val_loss": val_loss})
+        
